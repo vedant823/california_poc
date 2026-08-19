@@ -2,10 +2,11 @@ import networkx as nx
 import pandas as pd
 
 
-def run_annual_simulation(scenario="baseline"):
+def run_annual_simulation(scenario="baseline", w1=0.6, w2=0.4):
     """Reads data arrays, executes NetworkX pipelines, and generates scenario indexes.
 
-    Tracks monthly metrics, prints an operational summary table, and computes annual means.
+    Tracks monthly metrics, prints an operational summary table, and computes annual means
+    using user-defined weights passed from the web app interface.
     """
     df_water = pd.read_csv("data/watershed_historical.csv")
     df_res = pd.read_csv("data/reservoir_historical.csv")
@@ -24,14 +25,15 @@ def run_annual_simulation(scenario="baseline"):
         "target": [],
     }
 
-    # Operational Weights and Disaster Thresholds
-    w1, w2 = 0.6, 0.4  # 60% Supply Deficit, 40% Quality Failure
+    # Disaster Threshold Ceiling Constant
     MAX_DISASTER_NTU = 25.0  # Turbidity ceiling where water is 100% unusable
 
     print(
         f"\n=========================================================================================================================="
     )
-    print(f" SCENARIO DETAILS: {scenario.upper().replace('_', ' ')}")
+    print(
+        f" SCENARIO DETAILS: {scenario.upper().replace('_', ' ')} (w1={w1:.2f}, w2={w2:.2f})"
+    )
     print(
         f"=========================================================================================================================="
     )
@@ -113,7 +115,7 @@ def run_annual_simulation(scenario="baseline"):
         metrics_log["delivered"].append(supplied_volume)
         metrics_log["target"].append(target_ntu)
 
-        # SCORING ENGINE
+        # SCORING ENGINE (Using dynamic function arguments w1 and w2)
         supply_deficit = max(0.0, (comm_demand - supplied_volume) / comm_demand)
         supply_deficit = min(1.0, supply_deficit)
 
