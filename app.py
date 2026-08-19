@@ -15,7 +15,7 @@ st.title("💧 California Water Grid Vulnerability Dashboard")
 st.markdown(
     """
 This proof-of-concept web application models a high-level **Directed Acyclic Graph (DAG)** water grid system:
-* Sierra Watershed $\rightarrow$ Foothill Reservoir $\rightarrow$ North Treatment Plant $\rightarrow$ Community Utility.
+* Sierra Watershed --> Foothill Reservoir --> North Treatment Plant --> Community Utility.
 
 Adjust the weights below to see how prioritizing **Water Quantity vs. Water Quality** changes the overall vulnerability across different scenarios.
 """
