@@ -11,20 +11,18 @@ generate_mock_historical_data()
 # -------------------------------------------------------------
 st.set_page_config(page_title="CA Water Grid Vulnerability", layout="wide")
 
-st.title("💧 California Water Grid Vulnerability Dashboard") 
+st.title("💧 California Water Grid Vulnerability Dashboard")
 st.markdown(
-    """ 
-    This proof-of-concept web application models a high-level **Directed Acyclic Graph (DAG)** water grid system: 
-    
-    * Sierra Watershed → Foothill Reservoir → North Treatment Plant → Community Utility. 
-    
-    Select a climate scenario below to recalculate system metrics and view the resulting **Vulnerability Score (0.0 to 1.0)**. 
     """
+This proof-of-concept web application models a high-level **Directed Acyclic Graph (DAG)** water grid system:
+* Sierra Watershed $\rightarrow$ Foothill Reservoir $\rightarrow$ North Treatment Plant $\rightarrow$ Community Utility.
+
+Adjust the weights below to see how prioritizing **Water Quantity vs. Water Quality** changes the overall vulnerability across different scenarios.
+"""
 )
 
-
 # -------------------------------------------------------------
-# SIDEBAR CONTROLS (USER INTERFACES)
+# SIDEBAR CONTROLS (USER INTERFACES & DYNAMIC SLIDERS)
 # -------------------------------------------------------------
 st.sidebar.header("🕹️ Simulation Controls")
 
@@ -38,6 +36,28 @@ selected_scenario = st.sidebar.selectbox(
     ],
 )
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚖️ Vulnerability Weighting Factors")
+st.sidebar.markdown(
+    "Define the importance of supply vs quality. The values are locked to add up to exactly **1.0**."
+)
+
+# Interactive slider for w1 (Supply Deficit Weight)
+w1_input = st.sidebar.slider(
+    "Quantity Weight ($w_1$ - Supply Deficit)",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.6,
+    step=0.05,
+    help="Higher values penalize the system more when it fails to meet the required MGD volume demand.",
+)
+
+# Automatically calculate w2 so they always sum to 1.0
+w2_input = 1.0 - w1_input
+
+# Visual confirmation indicator text in sidebar
+st.sidebar.info(f"**Calculated Quality Weight ($w_2$):** {w2_input:.2f}")
+
 # Map human-readable dropdown strings back to internal backend function keys
 scenario_map = {
     "Baseline (Normal)": "baseline",
@@ -48,17 +68,13 @@ scenario_map = {
 backend_key = scenario_map[selected_scenario]
 
 # -------------------------------------------------------------
-# SIMULATION CALCULATION PIPELINE
+# SIMULATION CALCULATION PIPELINE (WITH CUSTOM WEIGHTS)
 # -------------------------------------------------------------
-# Run all backgrounds secretly to generate the final compilation comparison bar graph
-v_base = run_annual_simulation("baseline")
-v_drought = run_annual_simulation("drought")
-v_rain = run_annual_simulation("wildfire_plus_precipitation")
-v_comp = run_annual_simulation("compound_collapse")
-
-# Run user selected scenario to display on user interface canvas
-# Note: This will automatically print the markdown table cleanly behind the scenes into terminal log buffers
-_ = run_annual_simulation(backend_key)
+# Pass the slider values down into the NetworkX logic engines
+v_base = run_annual_simulation("baseline", w1=w1_input, w2=w2_input)
+v_drought = run_annual_simulation("drought", w1=w1_input, w2=w2_input)
+v_rain = run_annual_simulation("wildfire_plus_precipitation", w1=w1_input, w2=w2_input)
+v_comp = run_annual_simulation("compound_collapse", w1=w1_input, w2=w2_input)
 
 # -------------------------------------------------------------
 # LAYOUT DISPLAY SPLIT: VISUAL GRAPH VS METRICS SUMMARY
@@ -124,4 +140,12 @@ with col2:
 
     st.info(
         f"**Active Environment Context:** You are currently previewing system behavior mapping a continuous **{selected_scenario}** event footprint tracking real California baseline hydro-geological records across a 12-month timeline profile."
+    )
+    
+    st.markdown(
+        f"""
+        ### Current Weight Allocation Analysis:
+        * **Supply Protection Severity Penalty:** your system scaling currently weights a missing unit of water volume at **{w1_input * 100:.0f}%**.
+        * **Safety Standards Non-Compliance Penalty:** your system currently weights delivery of polluted water above your target threshold at **{w2_input * 100:.0f}%**.
+        """
     )
